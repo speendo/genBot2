@@ -86,6 +86,24 @@ public class DataBaseDriver {
 		}
 	}
 	
+	public void update(String evolutionStackName, int generationNumber, CocktailGenerationManager generationManager) throws SQLException {
+		try {
+			PreparedStatement statement = connection.prepareStatement("update ? set generationManager = ? where number = ?");
+			statement.setObject(1, evolutionStackName);
+			statement.setObject(2, serialize(generationManager));
+			statement.setObject(3, generationNumber);
+		
+			lock.lock();
+			
+			statement.execute();
+			
+			lock.unlock();
+			
+		} catch (SQLException | IOException e) {
+			throw new SQLException("Update failed", e);
+		}
+	}
+	
 	public CocktailGenerationManager select(String evolutionStackName, int generationNumber) throws SQLException {
 		PreparedStatement statement;
 		try {

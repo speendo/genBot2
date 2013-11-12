@@ -91,7 +91,6 @@ public class EvolutionAlgorithmManager {
 	private void convertProps() throws NumberFormatException, SQLException {
 		Properties props = loadProps();
 		
-//		System.out.println(props.getProperty("populationSize"));
 		updateProps(
 				props.getProperty("evolutionStackName"),
 				Integer.parseInt(props.getProperty("populationSize")), 
@@ -135,6 +134,7 @@ public class EvolutionAlgorithmManager {
 		
 			if (dbDriver.getLastGenerationNumber(evolutionStackName) == 0) {
 				this.genManager = new CocktailGenerationManager(populationSize, evolutionStackName, booleanAllowedIngredients);
+				save();
 			} else {
 				this.genManager = load();
 				this.didJustLoad = true;
@@ -159,15 +159,7 @@ public class EvolutionAlgorithmManager {
 	 * @param elitism number of cocktails to come to enter the next generation
 	 * @return the new cocktail generation
 	 */
-	public void evolve() throws SQLException, NotEnoughRatedCocktailsException {
-		if (didJustLoad) {
-			didJustLoad = false;
-		} else {
-			if (dbDriver != null) {
-				save();
-			}
-		}
-		
+	public void evolve() throws SQLException, NotEnoughRatedCocktailsException {		
 		// load properties - they may have been updated
 		convertProps();
 		
@@ -202,6 +194,15 @@ public class EvolutionAlgorithmManager {
 		nextGeneration = applyElitism(elitism, genManager.getCocktailGeneration(), nextGeneration);
 		
 		genManager.setGeneration(nextGeneration);
+		
+		if (didJustLoad) {
+			didJustLoad = false;
+		} else {
+			if (dbDriver != null) {
+				save();
+			}
+		}
+
 	}
 	
 	public double getMutationStdDeviation() {
@@ -240,6 +241,13 @@ public class EvolutionAlgorithmManager {
 		dbDriver.insert(evolutionStackName, generationNumber, cocktailGenerationManager);
 	}
 	
+	public void update() throws SQLException {
+		doUpdate(genManager.getGenerationNumber(), genManager);
+	}
+	
+	public void doUpdate(int generationNumber, CocktailGenerationManager cocktailGenerationManager) throws SQLException {
+		dbDriver.update(evolutionStackName, generationNumber, cocktailGenerationManager);
+	}
 	/*
 	 * checks the fitness for the whole cocktail generation
 	 */
@@ -346,8 +354,9 @@ public class EvolutionAlgorithmManager {
 		return retBoolean;
 	}
 	
-	public void setFitness(String name, double fitnessInput) {
+	public void setFitness(String name, double fitnessInput) throws SQLException {
 		getGenManager().getCocktailByName(name).setFitness(fitnessCheck, fitnessInput);
+		update();
 	}
 	
 	public CocktailGenerationManager getOldGeneration(int generationNumber) throws SQLException {
